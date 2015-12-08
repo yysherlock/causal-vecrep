@@ -2,6 +2,8 @@ import json
 import graphlab as gl
 
 def transfer2gl_format(json_filename, csv_filename, gl_filename):
+    """ You can learn how to transfer csv file into gl format"""
+
     data = json.loads(open(json_filename).read())
     copa_words = []
 
