@@ -75,12 +75,13 @@ sf = gl.SFrame('svd_vec/')
 def calculate_prod_distance(outfilename):
     outf = open(outfilename,'w')
     names = sf.column_names()
-    for cause in names:
-        if not cause.startswith('cause_'): continue
-        for effect in names:
-            if not effect.startswith('effect_'): continue
+    cause_names = [cause for cause in names if cause.startswith('cause_')]
+    effect_names = [effect for effect in names if effect.startswith('effect_')]
+
+    for cause in cause_names:
+        for effect in effect_names:
             cs = (sf[cause]*sf[effect]).sum()
             outf.write(cause.split('_')[1]+'\t'+effect.split('_')[1]+'\t'+str(cs)+'\n')
     outf.close()
 
-calculate_prod_distance('vector_cs.txt')
+calculate_prod_distance('vector_cs0.txt')
