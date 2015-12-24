@@ -4,6 +4,7 @@ similarity and causality as raw features
 
 """
 import numpy as np
+from math import sqrt
 import graphlab as gl
 
 copa_word_set = set({})
@@ -149,13 +150,14 @@ def predict_output(feature_matrix, weights):
     predictions = np.dot(feature_matrix, weights)
     return predictions
 
-def delta_objective_gradient_descent(feature_matrix, output, initial_weights, step_size, tolerance, maxiter = 3000):
+def delta_objective_gradient_descent(feature_matrix, output, initial_weights, step_size, tolerance, maxiter = 3000000):
     
     converged = False
     iterations = 0
     weights = np.array(initial_weights)
+    
     while iterations < maxiter and not converged:
-        predictions = predict_ouput(feature_matrix, weights)
+        predictions = predict_output(feature_matrix, weights)
         print 'iteration',str(iterations),', cost: ', np.dot(output, predictions), 'the smaller the better'
 
         derivative = np.dot(output, feature_matrix)
@@ -164,25 +166,54 @@ def delta_objective_gradient_descent(feature_matrix, output, initial_weights, st
         
         if gradient_magnitude < tolerance:
             converged = True
+        iterations += 1
 
     return weights
 
+def predict_copa(feature_matrix, weights):
+    """
+    return a np array contains elements {-1, +1}
+    
+    """
+    results = np.ones(len(feature_matrix))
+    results[predict_output(feature_matrix, weights) > 0] = -1.
+
+    return results # results for copa
 
 sf = gl.SFrame('copa_cs/')
 
 if __name__=="__main__":
     #get_copacs('copa_matrix.csv','copa_cs.csv')
     #save2disc('copa_cs.csv','copa_cs')
-    generate_features('lambda=0.9_log.txt', 'simple_data.csv')
-    save2disc('simple_data.csv','simple_data')
-    data_frame = gl.SFrame('simple_data')
+    #generate_features('lambda=0.9_log.txt', 'simple_data.csv')
+    #save2disc('simple_data.csv','simple_data')
     
-    initial_weights = np.array([1.,1.])
-    step_size = 1e-7
-    tolearance = 2.5e2
+    data_frame = gl.SFrame('simple_data')
+    # split into train_data and test_data
+    #train_data, test_data = data_frame.random_split(0.7, seed = 0)
+    train_data = data_frame[:500]
+    test_data = data_frame[500:]
     simple_features = ['cosine_distance_diff','causality_diff']
     my_output = 'label'
-    (simple_feature_matrix, output) = get_numpy_data(data_frame, simple_features, output, initial_weights, step_size, tolearance)
-    simple_weights = delta_objective_gradient_descent(simple_feature_matrix, output, initial_weights, step_size, tolerance)
+    (train_feature_matrix, train_output) = get_numpy_data(train_data, simple_features, my_output)
+    (test_feature_matrix, test_output) = get_numpy_data(test_data, simple_features, my_output)
+
+    initial_weights = np.array([1.,1.])
+    step_size = 1e-7
+    tolerance = 2.5e2
+    #simple_weights = delta_objective_gradient_descent(train_feature_matrix, train_output, initial_weights, step_size, tolerance)
+    simple_weights = np.array([-3.50989427, 218.27146827])
     print 'weights:', simple_weights
+    train_predictions = predict_output(train_feature_matrix, simple_weights)
+    test_predictions = predict_output(test_feature_matrix, simple_weights)
+    test_cost = np.dot(test_predictions, test_output)
+    print "test_cost:", test_cost
+
+    test_copa_predictions = predict_copa(test_feature_matrix, simple_weights)
+    print "test_output:\n\t",test_output
+    print "test_copa_predictions\n\t",test_copa_predictions
+    acc = np.isclose(test_copa_predictions,test_output).sum() / float(len(test_output))
+
+    print "Accuracy on test split(30%): ", acc
+
 
