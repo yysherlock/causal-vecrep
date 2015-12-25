@@ -1,0 +1,2 @@
+features:
+	forward_prob, backward_prob, forward_prob*backward_prob, cosine_distance[use frequency]
